@@ -1,8 +1,8 @@
 // GENERATED CODE -- DO NOT EDIT!
 /* eslint-disable */
 'use strict';
-var grpc = require('grpc');
-var token_service_pb = require('./token_service_pb.js');
+const grpc = require('@grpc/grpc-js');
+const token_service_pb = require('./token_service_pb.js');
 
 function serialize_escrow_TokenReply(arg) {
   if (!(arg instanceof token_service_pb.TokenReply)) {
@@ -57,4 +57,5 @@ getToken: {
   },
 };
 
+exports.TokenServiceService = TokenServiceService;
 exports.TokenServiceClient = grpc.makeGenericClientConstructor(TokenServiceService);

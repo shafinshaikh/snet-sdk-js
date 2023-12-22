@@ -1,9 +1,10 @@
 import { find, map } from 'lodash';
 import RegistryNetworks from 'singularitynet-platform-contracts/networks/Registry.json';
 import RegistryAbi from 'singularitynet-platform-contracts/abi/Registry.json';
-import { createHelia } from 'helia'; //import Helia
-import { json as heliaJson } from '@helia/json';
+
+// import { json as heliaJson } from '@helia/json';
 import logger from './utils/logger';
+
 
 export default class IPFSMetadataProvider {
   constructor(web3, networkId, ipfsEndpoint) {
@@ -11,11 +12,20 @@ export default class IPFSMetadataProvider {
     this._networkId = networkId;
     this._ipfsEndpoint = ipfsEndpoint;
     this._helia = this._constructHeliaClient(); //initialize Helia
-    this._heliaJson = heliaJson(this._helia);
+    // this._heliaJson = heliaJson(this._helia);
     const registryAddress = RegistryNetworks[this._networkId].address;
     this._registryContract = new this._web3.eth.Contract(RegistryAbi, registryAddress);
   }
 
+  
+  async HeliaClient () {
+    const { createHelia } = await import("helia");
+    return createHelia;
+  }
+  async HeliaJSON () {
+    const { json } = await import("@helia/json");
+    return json;
+  }
   /**
    * @param {string} orgId
    * @param {string} serviceId
@@ -49,7 +59,7 @@ export default class IPFSMetadataProvider {
   async _fetchMetadataFromIpfs(metadataURI) {
     const ipfsCID = `${this._web3.utils.hexToUtf8(metadataURI).substring(7)}`;
     logger.debug(`Fetching metadata from IPFS[CID: ${ipfsCID}]`);
-    return await this._heliaJson.get(ipfsCID);
+    return await this.HeliaJSON().get(ipfsCID);
   }
 
   _enhanceServiceGroupDetails(serviceMetadata, orgMetadata) {
@@ -68,12 +78,16 @@ export default class IPFSMetadataProvider {
     return { ...serviceMetadata, groups };
   }
 
-  _constructHeliaClient() {
+  async _constructHeliaClient() {
     // Initialize Helia client
+    const createHelia = await this.HeliaClient();
     const heliaConfig = {
       // Helia-specific configuration
       // Add any additional Helia configurations here
       // This may include libp2p configuration, datastore, etc.
+      protocol: this._ipfsEndpoint.protocol.replace(':', ''),
+      host: this._ipfsEndpoint.hostname,
+      port: this._ipfsEndpoint.port || 5001,
     };
     return createHelia(heliaConfig);
   }
