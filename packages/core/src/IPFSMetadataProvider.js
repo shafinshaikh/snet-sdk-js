@@ -33,12 +33,19 @@ export default class IPFSMetadataProvider {
    */
   async metadata(orgId, serviceId) {
     logger.debug(`Fetching service metadata [org: ${orgId} | service: ${serviceId}]`);
-    const orgIdBytes = this._web3.utils.fromAscii(orgId);
-    const serviceIdBytes = this._web3.utils.fromAscii(serviceId);
-    const orgMetadata = await this._fetchOrgMetadata(orgIdBytes);
-    const serviceMetadata = await this._fetchServiceMetadata(orgIdBytes, serviceIdBytes);
+
+    // Convert to hex and pad with zeros to ensure 32 bytes
+    let orgIdHex = this._web3.utils.asciiToHex(orgId);
+    orgIdHex = orgIdHex.padEnd(66, '0'); // 66 = '0x' + 64 hex characters
+
+    let serviceIdHex = this._web3.utils.asciiToHex(serviceId);
+    serviceIdHex = serviceIdHex.padEnd(66, '0'); // 66 = '0x' + 64 hex characters
+
+    const orgMetadata = await this._fetchOrgMetadata(orgIdHex);
+    const serviceMetadata = await this._fetchServiceMetadata(orgIdHex, serviceIdHex);
+
     return Promise.resolve(this._enhanceServiceGroupDetails(serviceMetadata, orgMetadata));
-  }
+}
 
   async _fetchOrgMetadata(orgIdBytes) {
     logger.debug('Fetching org metadata URI from registry contract');
