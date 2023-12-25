@@ -1,72 +1,84 @@
-import { find, map } from 'lodash';
-import RegistryNetworks from 'singularitynet-platform-contracts/networks/Registry.json';
-import RegistryAbi from 'singularitynet-platform-contracts/abi/Registry.json';
-
-// import { json as heliaJson } from '@helia/json';
-import logger from './utils/logger';
-
+import { find, map } from "lodash";
+import RegistryNetworks from "singularitynet-platform-contracts/networks/Registry.json";
+import RegistryAbi from "singularitynet-platform-contracts/abi/Registry.json";
+// import { createHelia as HeliaClient } from "helia";
+// import { json as HeliaJSON } from "@helia/json";
+import logger from "./utils/logger";
 
 export default class IPFSMetadataProvider {
+  async HeliaClient() {
+    const { createHelia } = await eval('import("helia")');
+    return createHelia;
+  }
+  async HeliaJSON() {
+    const { json } = await import("@helia/json");
+    return json;
+  }
   constructor(web3, networkId, ipfsEndpoint) {
     this._web3 = web3;
     this._networkId = networkId;
     this._ipfsEndpoint = ipfsEndpoint;
     this._helia = this._constructHeliaClient(); //initialize Helia
-    // this._heliaJson = heliaJson(this._helia);
+    //this._heliaJson = HeliaJSON(this._helia);
     const registryAddress = RegistryNetworks[this._networkId].address;
-    this._registryContract = new this._web3.eth.Contract(RegistryAbi, registryAddress);
+    this._registryContract = new this._web3.eth.Contract(
+      RegistryAbi,
+      registryAddress
+    );
   }
 
-  
-  async HeliaClient () {
-    const { createHelia } = await import("helia");
-    return createHelia;
-  }
-  async HeliaJSON () {
-    const { json } = await import("@helia/json");
-    return json;
-  }
   /**
    * @param {string} orgId
    * @param {string} serviceId
-   * @returns {Promise.<ServiceMetadata>}
+   * @returns {Promise.<serviceMetadata>}//Change from "ServiceMetadata" to "serviceMetaData"
    */
   async metadata(orgId, serviceId) {
-    logger.debug(`Fetching service metadata [org: ${orgId} | service: ${serviceId}]`);
+    logger.debug(
+      "Fetching service metadata [org: ${orgId} | service: ${serviceId}]"
+    );
 
     // Convert to hex and pad with zeros to ensure 32 bytes
     let orgIdHex = this._web3.utils.asciiToHex(orgId);
-    orgIdHex = orgIdHex.padEnd(66, '0'); // 66 = '0x' + 64 hex characters
+    orgIdHex = orgIdHex.padEnd(66, "0"); // 66 = '0x' + 64 hex characters
 
     let serviceIdHex = this._web3.utils.asciiToHex(serviceId);
-    serviceIdHex = serviceIdHex.padEnd(66, '0'); // 66 = '0x' + 64 hex characters
+    serviceIdHex = serviceIdHex.padEnd(66, "0"); // 66 = '0x' + 64 hex characters
 
     const orgMetadata = await this._fetchOrgMetadata(orgIdHex);
-    const serviceMetadata = await this._fetchServiceMetadata(orgIdHex, serviceIdHex);
+    const serviceMetadata = await this._fetchServiceMetadata(
+      orgIdHex,
+      serviceIdHex
+    );
 
-    return Promise.resolve(this._enhanceServiceGroupDetails(serviceMetadata, orgMetadata));
-}
+    return Promise.resolve(
+      this._enhanceServiceGroupDetails(serviceMetadata, orgMetadata)
+    );
+  }
 
   async _fetchOrgMetadata(orgIdBytes) {
-    logger.debug('Fetching org metadata URI from registry contract');
-    const { orgMetadataURI } = await this._registryContract.methods.getOrganizationById(orgIdBytes).call();
+    logger.debug("Fetching org metadata URI from registry contract");
+    const { orgMetadataURI } = await this._registryContract.methods
+      .getOrganizationById(orgIdBytes)
+      .call();
 
     return this._fetchMetadataFromIpfs(orgMetadataURI);
   }
 
   async _fetchServiceMetadata(orgIdBytes, serviceIdBytes) {
-    logger.debug('Fetching service metadata URI from registry contract');
-    const { metadataURI: serviceMetadataURI } = await this._registryContract
-      .methods
-      .getServiceRegistrationById(orgIdBytes, serviceIdBytes)
-      .call();
+    logger.debug("Fetching service metadata URI from registry contract");
+    const { metadataURI: serviceMetadataURI } =
+      await this._registryContract.methods
+        .getServiceRegistrationById(orgIdBytes, serviceIdBytes)
+        .call();
     return this._fetchMetadataFromIpfs(serviceMetadataURI);
   }
-
+  
   async _fetchMetadataFromIpfs(metadataURI) {
     const ipfsCID = `${this._web3.utils.hexToUtf8(metadataURI).substring(7)}`;
-    logger.debug(`Fetching metadata from IPFS[CID: ${ipfsCID}]`);
-    return await this.HeliaJSON().get(ipfsCID);
+    //logger.debug(`Fetching metadata from IPFS[CID: ${ipfsCID}]`);
+    console.log(ipfsCID);
+    const json = await this.HeliaJSON();
+    return await json.get(ipfsCID);
   }
 
   _enhanceServiceGroupDetails(serviceMetadata, orgMetadata) {
@@ -75,7 +87,10 @@ export default class IPFSMetadataProvider {
 
     const groups = map(serviceGroups, (group) => {
       const { group_name: serviceGroupName } = group;
-      const orgGroup = find(orgGroups, ({ group_name: orgGroupName }) => orgGroupName === serviceGroupName);
+      const orgGroup = find(
+        orgGroups,
+        ({ group_name: orgGroupName }) => orgGroupName === serviceGroupName
+      );
       return {
         ...group,
         payment: orgGroup.payment,
@@ -86,16 +101,15 @@ export default class IPFSMetadataProvider {
   }
 
   async _constructHeliaClient() {
-    // Initialize Helia client
-    const createHelia = await this.HeliaClient();
+    console.log("DEBUG: _constructHeliaClient: " + this._ipfsEndpoint);
+    const url = new URL(this._ipfsEndpoint);
     const heliaConfig = {
-      // Helia-specific configuration
-      // Add any additional Helia configurations here
-      // This may include libp2p configuration, datastore, etc.
-      protocol: this._ipfsEndpoint.protocol.replace(':', ''),
-      host: this._ipfsEndpoint.hostname,
-      port: this._ipfsEndpoint.port || 5001,
+      protocol: url.protocol.replace(":", ""),
+      host: url.hostname,
+      port: url.port || 5001,
     };
-    return createHelia(heliaConfig);
+    const createHelia = await this.HeliaClient();
+    const helia = createHelia(heliaConfig);
+    return helia;
   }
 }
