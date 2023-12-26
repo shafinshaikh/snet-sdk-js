@@ -18,8 +18,7 @@ export default class IPFSMetadataProvider {
     this._web3 = web3;
     this._networkId = networkId;
     this._ipfsEndpoint = ipfsEndpoint;
-    this._helia = this._constructHeliaClient(); //initialize Helia
-    //this._heliaJson = HeliaJSON(this._helia);
+    this.init();
     const registryAddress = RegistryNetworks[this._networkId].address;
     this._registryContract = new this._web3.eth.Contract(
       RegistryAbi,
@@ -27,6 +26,12 @@ export default class IPFSMetadataProvider {
     );
   }
 
+  async init() {
+    this._helia = await this._constructHeliaClient(); //initialize Helia
+    console.log("DEBUG : helia " + this._helia);
+    this._heliaJson = await this.HeliaJSON(this._helia);
+    console.log("DEBUG : heliaJson " + this._heliaJson);
+  }
   /**
    * @param {string} orgId
    * @param {string} serviceId
@@ -75,9 +80,9 @@ export default class IPFSMetadataProvider {
   
   async _fetchMetadataFromIpfs(metadataURI) {
     const ipfsCID = `${this._web3.utils.hexToUtf8(metadataURI).substring(7)}`;
-    //logger.debug(`Fetching metadata from IPFS[CID: ${ipfsCID}]`);
-    console.log(ipfsCID);
-    const json = await this.HeliaJSON();
+    logger.debug(`Fetching metadata from IPFS[CID: ${ipfsCID}]`);
+    const json = await this._heliaJson();
+    console.log("Debug JSON"+json);
     return await json.get(ipfsCID);
   }
 
@@ -109,7 +114,8 @@ export default class IPFSMetadataProvider {
       port: url.port || 5001,
     };
     const createHelia = await this.HeliaClient();
-    const helia = createHelia(heliaConfig);
+    const helia = await createHelia(heliaConfig);
+    console.log("DEBUG: IPFSMetadataProveder.js helia" + helia)
     return helia;
   }
 }
