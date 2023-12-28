@@ -85,8 +85,8 @@ export default class IPFSMetadataProvider {
   }
   
   async _fetchMetadataFromIpfs(metadataURI) {
-    const ipfsCID = ${this._web3.utils.hexToUtf8(metadataURI).substring(7)};
-    logger.debug(Fetching metadata from IPFS[CID: ${ipfsCID}]);
+    const ipfsCID = `${this._web3.utils.hexToUtf8(metadataURI).substring(7)}`;
+    logger.debug(`Fetching metadata from IPFS[CID: ${ipfsCID}]`);
     const json = await this._heliaJson();
     console.log("Debug JSON"+json);
     return await json.get(ipfsCID);
