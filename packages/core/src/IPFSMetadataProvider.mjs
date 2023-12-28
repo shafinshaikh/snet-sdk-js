@@ -1,24 +1,30 @@
 import { find, map } from "lodash";
 import RegistryNetworks from "singularitynet-platform-contracts/networks/Registry.json";
-import RegistryAbi from "singularitynet-platform-contracts/abi/Registry.json";
-// import { createHelia as HeliaClient } from "helia";
-// import { json as HeliaJSON } from "@helia/json";
+// import RegistryAbi from "singularitynet-platform-contracts/abi/Registry.json";
+import { createHelia as HeliaClient } from "helia";
+import { json as HeliaJSON } from "@helia/json";
+import { FsBlockstore } from 'blockstore-fs';
+import { join } from "path";
+import { CID } from 'multiformats/cid';
+import abi  from "./utils/abi.json";
 import logger from "./utils/logger";
 
 export default class IPFSMetadataProvider {
-  async HeliaClient() {
-    const { createHelia } = await eval('import("helia")');
-    return createHelia;
-  }
-  async HeliaJSON() {
-    const { json } = await import("@helia/json");
-    return json;
-  }
+  // async HeliaClient() {
+  //   const { createHelia } = await eval('import("helia")');
+  //   return createHelia;
+  // }
+  // async HeliaJSON() {
+  //   const { json } = await import("@helia/json");
+  //   return json;
+  // }
   constructor(web3, networkId, ipfsEndpoint) {
     this._web3 = web3;
     this._networkId = networkId;
     this._ipfsEndpoint = ipfsEndpoint;
-    this.init();
+    // this.init();
+    this._helia = this._constructHeliaClient();
+    this._heliaJson = HeliaJSON(this._helia);
     const registryAddress = RegistryNetworks[this._networkId].address;
     this._registryContract = new this._web3.eth.Contract(
       RegistryAbi,
@@ -26,12 +32,12 @@ export default class IPFSMetadataProvider {
     );
   }
 
-  async init() {
-    this._helia = await this._constructHeliaClient(); //initialize Helia
-    console.log("DEBUG : helia " + this._helia);
-    this._heliaJson = await this.HeliaJSON(this._helia);
-    console.log("DEBUG : heliaJson " + this._heliaJson);
-  }
+  // async init() {
+  //   this._helia = await this._constructHeliaClient(); //initialize Helia
+  //   console.log("DEBUG : helia " + this._helia);
+  //   this._heliaJson = await HeliaJSON(this._helia);
+  //   console.log("DEBUG : heliaJson " + this._heliaJson);
+  // }
   /**
    * @param {string} orgId
    * @param {string} serviceId
@@ -79,8 +85,8 @@ export default class IPFSMetadataProvider {
   }
   
   async _fetchMetadataFromIpfs(metadataURI) {
-    const ipfsCID = `${this._web3.utils.hexToUtf8(metadataURI).substring(7)}`;
-    logger.debug(`Fetching metadata from IPFS[CID: ${ipfsCID}]`);
+    const ipfsCID = ${this._web3.utils.hexToUtf8(metadataURI).substring(7)};
+    logger.debug(Fetching metadata from IPFS[CID: ${ipfsCID}]);
     const json = await this._heliaJson();
     console.log("Debug JSON"+json);
     return await json.get(ipfsCID);
@@ -113,7 +119,9 @@ export default class IPFSMetadataProvider {
       host: url.hostname,
       port: url.port || 5001,
     };
-    const createHelia = await this.HeliaClient();
+    console.log()
+    const store = new FsBlockstore(join(url, '..', 'ipfs'));
+    const createHelia = await HeliaClient({ blockstore: store });
     const helia = await createHelia(heliaConfig);
     console.log("DEBUG: IPFSMetadataProveder.js helia" + helia)
     return helia;

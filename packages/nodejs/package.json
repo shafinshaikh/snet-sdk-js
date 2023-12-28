@@ -2,6 +2,7 @@
   "name": "snet-sdk",
   "version": "2.0.0-beta.0",
   "description": "SingularityNET SDK for Nodejs",
+  "type": "module",
   "main": "./dist/index.js",
   "files": [
     "dist"
@@ -31,10 +32,13 @@
     "@grpc/grpc-js": "^1.9.13",
     "@helia/json": "^1.0.3",
     "bignumber.js": "^9.1.2",
+    "blockstore-fs": "^1.1.8",
     "es6-promise": "^4.2.8",
     "ethjs": "^0.4.0",
     "helia": "^2.1.0",
+    "jsonc": "^2.0.0",
     "lodash": "latest",
+    "multiformats": "^13.0.0",
     "singularitynet-platform-contracts": "^1.0.2",
     "singularitynet-token-contracts": "^3.0.1",
     "web3": "^4.2.2",
@@ -47,6 +51,7 @@
   "devDependencies": {
     "@babel/cli": "^7.23.0",
     "@babel/core": "^7.23.3",
+    "@babel/helper-compilation-targets": "^7.23.6",
     "@babel/node": "^7.22.19",
     "@babel/preset-env": "^7.23.3",
     "@babel/register": "^7.22.15",
